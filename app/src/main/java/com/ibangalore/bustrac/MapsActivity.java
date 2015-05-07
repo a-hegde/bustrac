@@ -1,13 +1,22 @@
 package com.ibangalore.bustrac;
 
 import android.os.Bundle;
-import android.support.v4.app.FragmentTransaction;
+import android.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 
-public class MapsActivity extends ActionBarActivity
-            implements LocationFetchFragment.OnBusItemSelectedListener /*, OnMapReadyCallback */ {
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
+public class MapsActivity extends ActionBarActivity
+            implements LocationFetchFragment.OnBusItemSelectedListener, OnMapReadyCallback {
+
+    private GoogleMap mMap=null;
+    private boolean mShowMap = true;
 
     private final String LOG_TAG = MapsActivity.class.getSimpleName();
     private String mRoute = "";
@@ -24,12 +33,12 @@ public class MapsActivity extends ActionBarActivity
         if (findViewById(R.id.container) != null){
             if (savedInstanceState == null){
                 LocationFetchFragment locationFetchFragment = new LocationFetchFragment();
-                Log.d(LOG_TAG, "onCreate: invoking SupportFragMgr");
-                getSupportFragmentManager().beginTransaction()
+                Log.d(LOG_TAG, "onCreate: invoking FragMgr");
+                getFragmentManager().beginTransaction()
                         .add(R.id.container, locationFetchFragment)
                         .commit();
             }
-            Log.d(LOG_TAG, "onCreate: done with invoking SupportFragMgr");
+            Log.d(LOG_TAG, "onCreate: done with invoking FragMgr");
         }
 
 
@@ -41,39 +50,34 @@ public class MapsActivity extends ActionBarActivity
     }
 
     public void onBusItemSelected(String route, double latitude, double longitude){
-        MapsFragment mapsFragment = (MapsFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
 
         Log.d(LOG_TAG, "starting func onBusItemSelected");
-        if (mapsFragment == null){  // Single pane mode, we need to create a new Maps Fragment
-            mapsFragment = new MapsFragment();
-            //Pass the route number and lat-long as parameters in args bundle
-            Bundle args = new Bundle();
+
+        MapFragment mapFragment = MapFragment.newInstance();
+
+        mapFragment.getMapAsync(this);
+
+        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+        //Replace whatever is in this container with the new (maps) fragment.
+        transaction.replace(R.id.container, mapFragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
 
             //Assign values to member variable
             mRoute = route; mLatitude = latitude; mLongitude = longitude;
 
-            args.putString(mapsFragment.ROUTE_NUMBER, route);
-            args.putDouble(mapsFragment.LATITUDE, latitude);
-            args.putDouble(mapsFragment.LONGITUDE, longitude);
-            mapsFragment.setArguments(args);
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            //Replace whatever is in this container with the new (maps) fragment.
-            transaction.replace(R.id.container, mapsFragment);
-            transaction.addToBackStack(null);
-            transaction.commit();
-        }
-        else
-            Log.d(LOG_TAG, "maps Fragment is not null, now what");
-
     }
 
-//    @Override
-//    public void onMapReady(GoogleMap map){
-//        map.addMarker(new MarkerOptions()
-//                .position(new LatLng(mLatitude, mLongitude))
-//                .title(mRoute));
-//    }
+    @Override
+    public void onMapReady(GoogleMap map){
+        Log.d(LOG_TAG, "starting func onMapReady with route "+mRoute+" lat/long "+mLatitude+"/"+mLongitude);
+        LatLng point = new LatLng(mLatitude, mLongitude);
+        map.addMarker(new MarkerOptions()
+                .position(point)
+                .title("Marker"));
+        map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, 14));
+    }
 
 
 }
