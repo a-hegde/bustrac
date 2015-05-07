@@ -8,9 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 /**
  * Created by ahegde on 5/5/15.
@@ -18,23 +15,24 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class MapsFragment extends Fragment {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
+//    private OnMapReadyCallback mMapReadyCallback;
+
     private final String LOG_TAG = MapsFragment.class.getSimpleName();
+    public static final String ROUTE_NUMBER = "ROUTE_NUMBER";
+    public static final String LONGITUDE = "LONGITUDE";
+    public static final String LATITUDE = "LATITUDE";
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                 Bundle savedInstanceState) {
+        Log.d(LOG_TAG, " about to inflate");
         View mapView = inflater.inflate(R.layout.fragment_maps,container, false);
-
-        setUpMapIfNeeded();
+        Log.d(LOG_TAG, " finished inflating");
+//        setUpMapIfNeeded();
         return mapView;
     }
 
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        setUpMapIfNeeded();
-    }
 
 
     /**
@@ -51,28 +49,36 @@ public class MapsFragment extends Fragment {
      * have been completely destroyed during this process (it is likely that it would only be
      * stopped or paused), {@link #onCreate(Bundle)} may not be called again so we should call this
      * method in {@link #onResume()} to guarantee that it will be called.
-     */
+     *
     private void setUpMapIfNeeded() {
         // Do a null check to confirm that we have not already instantiated the map.
         if (mMap == null) {
             // Try to obtain the map from the SupportMapFragment.
-            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
-                    .getMap();
+//            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
+//                    .getMap();
             // Check if we were successful in obtaining the map.
             if (mMap != null) {
-                setUpMap();
+//                setUpMap();
             }
         }
     }
+*/
 
     /**
      * This is where we can add markers or lines, add listeners or move the camera. In this case, we
      * just add a marker near Africa.
      * <p/>
      * This should only be called once and when we are sure that {@link #mMap} is not null.
-     */
+     *
     private void setUpMap() {
         mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
     }
+*/
 
+
+//    @Override
+//    public void onMapReady(GoogleMap map){
+//        this.mMap = map;
+//
+//    }
 }

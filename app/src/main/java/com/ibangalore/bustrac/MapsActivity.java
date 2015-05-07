@@ -1,14 +1,18 @@
 package com.ibangalore.bustrac;
 
 import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 
-public class MapsActivity extends ActionBarActivity { //FragmentActivity {
+public class MapsActivity extends ActionBarActivity
+            implements LocationFetchFragment.OnBusItemSelectedListener /*, OnMapReadyCallback */ {
 
-//    private GoogleMap mMap; // Might be null if Google Play services APK is not available.
 
     private final String LOG_TAG = MapsActivity.class.getSimpleName();
+    private String mRoute = "";
+    private Double mLatitude = 0.0;
+    private Double mLongitude = 0.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,15 +33,47 @@ public class MapsActivity extends ActionBarActivity { //FragmentActivity {
         }
 
 
-//        setContentView(R.layout.fragment_maps);
-//        setUpMapIfNeeded();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-//        setUpMapIfNeeded();
     }
+
+    public void onBusItemSelected(String route, double latitude, double longitude){
+        MapsFragment mapsFragment = (MapsFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+
+        Log.d(LOG_TAG, "starting func onBusItemSelected");
+        if (mapsFragment == null){  // Single pane mode, we need to create a new Maps Fragment
+            mapsFragment = new MapsFragment();
+            //Pass the route number and lat-long as parameters in args bundle
+            Bundle args = new Bundle();
+
+            //Assign values to member variable
+            mRoute = route; mLatitude = latitude; mLongitude = longitude;
+
+            args.putString(mapsFragment.ROUTE_NUMBER, route);
+            args.putDouble(mapsFragment.LATITUDE, latitude);
+            args.putDouble(mapsFragment.LONGITUDE, longitude);
+            mapsFragment.setArguments(args);
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            //Replace whatever is in this container with the new (maps) fragment.
+            transaction.replace(R.id.container, mapsFragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        }
+        else
+            Log.d(LOG_TAG, "maps Fragment is not null, now what");
+
+    }
+
+//    @Override
+//    public void onMapReady(GoogleMap map){
+//        map.addMarker(new MarkerOptions()
+//                .position(new LatLng(mLatitude, mLongitude))
+//                .title(mRoute));
+//    }
 
 
 }

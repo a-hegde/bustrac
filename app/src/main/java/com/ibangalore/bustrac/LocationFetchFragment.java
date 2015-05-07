@@ -1,5 +1,6 @@
 package com.ibangalore.bustrac;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.net.Uri;
@@ -10,6 +11,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -34,8 +36,17 @@ import java.util.Vector;
  */
 public class LocationFetchFragment extends Fragment{
 
+    OnBusItemSelectedListener mCallback;
     public final String LOG_TAG = LocationFetchFragment.class.getSimpleName();
     ArrayAdapter<String> mBusLocAdapter;
+    Vector<ContentValues> mContentValuesVector;
+
+    /* The calling activity must implement this interface */
+    public interface OnBusItemSelectedListener {
+        //Called by LocationFetchFragment when an item from the list view is selected
+        public void onBusItemSelected(String route, double latitude, double longitude);
+    }
+
 
     //Constructor
     public LocationFetchFragment() {
@@ -61,6 +72,22 @@ public class LocationFetchFragment extends Fragment{
         View rootView = inflater.inflate(R.layout.bus_location_fragment, container, false);
         ListView listView = (ListView) rootView.findViewById(R.id.listview_bus_coords);
         listView.setAdapter(mBusLocAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                double lat = mContentValuesVector.get(position).getAsDouble("lat");
+                double lng = mContentValuesVector.get(position).getAsDouble("lng");
+                Log.d(LOG_TAG, "Lat = "+lat+" and Long = "+lng+ "at position "+position);
+                try {
+                    Log.d(LOG_TAG, "Content Values at 3 = " + mContentValuesVector.get(3).toString());
+                    Log.d(LOG_TAG, "Content Values at 4 = " + mContentValuesVector.get(4).toString());
+                }catch (ArrayIndexOutOfBoundsException e){
+                    Log.d(LOG_TAG, "Looks like we have 3 or less buses showing up");
+                }
+                mCallback.onBusItemSelected("23", lat, lng);
+
+            }
+        });
 
 
         Button fetchButton = (Button) rootView.findViewById(R.id.fetch_button);
@@ -86,7 +113,16 @@ public class LocationFetchFragment extends Fragment{
 
     }
 
-
+    @Override
+    public void onAttach(Activity activity){
+        super.onAttach(activity);
+        try{
+            mCallback = (OnBusItemSelectedListener) activity;
+        }catch (ClassCastException e){
+            throw new ClassCastException(activity.toString()
+            + " must implement OnBusItemSelectedListener");
+        }
+    }
 
     private class DownloadBusLocation extends AsyncTask<Void, Void, ArrayList<String>>{
         ProgressDialog progressDialog = new ProgressDialog(getActivity());
@@ -198,20 +234,25 @@ public class LocationFetchFragment extends Fragment{
                 errorArrayList.add("fetchBusLocation: converted string to JsonObj. Now extract buses Array");
                 JSONArray busesArray = locationJson.getJSONArray("bus");
                 errorArrayList.add("fetchBusLocation: Extracted buses Array = "+busesArray.toString());
-                Vector<ContentValues> contentValuesVector = new Vector<ContentValues>(busesArray.length());
+                mContentValuesVector = new Vector<ContentValues>();
 
                 ContentValues busValues = new ContentValues();
 
                 for (int i = 0; i < busesArray.length(); ++i){
                     JSONObject busObject = busesArray.getJSONObject(i);
                     errorArrayList.add("fetchBusLocation: Got individual bus "+i+" = "+busObject.toString());
-//                busValues.put("lat", busObject.getString("lat"));
-//                busValues.put("lon", busObject.getString("lon"));
-//                busValues.put("vehicleId", busObject.getString("VehicleId"));
-//                busValues.put("direction", busObject.getString("Direction"));
-//                busValues.put("dest", busObject.getString("destination"));
-//                contentValuesVector.add(busValues);
 
+                    //Separating out the individual elements and storing them in a ContentValue Vector
+                    busValues.put("lat", busObject.getString("lat"));
+                    busValues.put("lng", busObject.getString("lng"));
+                    busValues.put("vehicleID", busObject.getString("VehicleID"));
+                    busValues.put("Direction", busObject.getString("Direction"));
+                    busValues.put("destination", busObject.getString("destination"));
+                    mContentValuesVector.add(busValues);
+
+
+                    //Creating a composite string for display purposes and adding it to an ArrayList
+                    //that will be used to update the ArrayAdapter linked to the listView
                     String oneLine = "[" + busObject.getString("lat") + "/"
                             + busObject.getString("lng") + "]"
                             +" to "+busObject.getString("destination")
