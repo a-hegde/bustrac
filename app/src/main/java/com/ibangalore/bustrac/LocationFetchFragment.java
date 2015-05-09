@@ -44,7 +44,7 @@ public class LocationFetchFragment extends Fragment{
     /* The calling activity must implement this interface */
     public interface OnBusItemSelectedListener {
         //Called by LocationFetchFragment when an item from the list view is selected
-        public void onBusItemSelected(String route, double latitude, double longitude);
+        public void onBusItemSelected(Vector<ContentValues> busPositionsCVV);
     }
 
 
@@ -84,7 +84,7 @@ public class LocationFetchFragment extends Fragment{
                 }catch (ArrayIndexOutOfBoundsException e){
                     Log.d(LOG_TAG, "Looks like we have 3 or less buses showing up");
                 }
-                mCallback.onBusItemSelected("23", lat, lng);
+                mCallback.onBusItemSelected(mContentValuesVector);
 
             }
         });
@@ -248,7 +248,10 @@ public class LocationFetchFragment extends Fragment{
                     busValues.put("vehicleID", busObject.getString("VehicleID"));
                     busValues.put("Direction", busObject.getString("Direction"));
                     busValues.put("destination", busObject.getString("destination"));
+                    busValues.put("routeNum", "23"); //this needs to be parameterized
+
                     mContentValuesVector.add(busValues);
+                    busValues = new ContentValues();
 
 
                     //Creating a composite string for display purposes and adding it to an ArrayList

@@ -1,5 +1,6 @@
 package com.ibangalore.bustrac;
 
+import android.content.ContentValues;
 import android.os.Bundle;
 import android.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
@@ -12,6 +13,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.Vector;
+
 public class MapsActivity extends ActionBarActivity
             implements LocationFetchFragment.OnBusItemSelectedListener, OnMapReadyCallback {
 
@@ -22,6 +25,8 @@ public class MapsActivity extends ActionBarActivity
     private String mRoute = "";
     private Double mLatitude = 0.0;
     private Double mLongitude = 0.0;
+    Vector<ContentValues> mBusPositionsCVV;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +54,7 @@ public class MapsActivity extends ActionBarActivity
         super.onResume();
     }
 
-    public void onBusItemSelected(String route, double latitude, double longitude){
+    public void onBusItemSelected(Vector<ContentValues> busPositionsCVV){
 
         Log.d(LOG_TAG, "starting func onBusItemSelected");
 
@@ -64,19 +69,38 @@ public class MapsActivity extends ActionBarActivity
         transaction.commit();
 
             //Assign values to member variable
-            mRoute = route; mLatitude = latitude; mLongitude = longitude;
+        mBusPositionsCVV = busPositionsCVV;
+        //mRoute = route; mLatitude = latitude; mLongitude = longitude;
 
     }
 
     @Override
     public void onMapReady(GoogleMap map){
-        Log.d(LOG_TAG, "starting func onMapReady with route "+mRoute+" lat/long "+mLatitude+"/"+mLongitude);
-        LatLng point = new LatLng(mLatitude, mLongitude);
-        map.addMarker(new MarkerOptions()
-                .position(point)
-                .title("Marker"));
+        double avgLat = 0, avgLng = 0;
+        int busCount = 0;
+        for (ContentValues busPosition:mBusPositionsCVV){
+            double lat = busPosition.getAsDouble("lat");
+            double lng = busPosition.getAsDouble("lng");
+            String marker = busPosition.getAsString("routeNum");
+            LatLng point = new LatLng(lat, lng);
+
+            //calculations to figure out a centre point for map zoom
+            avgLat+=lat; avgLng+=lng; busCount++;
+
+            map.addMarker(new MarkerOptions()
+                    .position(point)
+                    .title(marker));
+        }
+
+        if(busCount >0) {
+        //Find the mean point across all the points by diving the sum of latitudes
+        // (and longitudes) by total number of points
+            avgLat /= busCount;
+            avgLng /= busCount;
+        }
+
         map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, 14));
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(avgLat, avgLng), 11));
     }
 
 
