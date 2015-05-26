@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#74C92E"
+    android:padding="8dp"
+    >
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="SEPTA Bus Tracker"
+        android:layout_weight="4"
+        android:layout_gravity="left"
+        android:textSize="@dimen/abc_text_size_medium_material"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Route:"
+        android:layout_gravity="end"
+        android:textAlignment="center"
+        android:textSize="@dimen/abc_text_size_medium_material"
+        android:textIsSelectable="true" />
+    <Spinner
+        android:id="@+id/route_num_spinner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_weight="1"
+        android:textAlignment="center" />
+</LinearLayout>

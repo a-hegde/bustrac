@@ -34,6 +34,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <provider
+            android:authorities="com.ibangalore.bustrac.provider"
+            android:name=".data.TrackerProvider"
+            android:exported="false"
+            android:syncable="true" />
+
 
     </application>
 

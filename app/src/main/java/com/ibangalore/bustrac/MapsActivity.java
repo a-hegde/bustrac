@@ -12,11 +12,13 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.ibangalore.bustrac.data.TrackerContract;
 
 import java.util.Vector;
 
 public class MapsActivity extends ActionBarActivity
-            implements LocationFetchFragment.OnBusItemSelectedListener, OnMapReadyCallback {
+            implements LocationFetchFragment.OnBusItemSelectedListener,
+        OnMapReadyCallback, HeaderFragment.OnSpinnerChangeListener {
 
     private GoogleMap mMap=null;
     private boolean mShowMap = true;
@@ -26,6 +28,7 @@ public class MapsActivity extends ActionBarActivity
     private Double mLatitude = 0.0;
     private Double mLongitude = 0.0;
     Vector<ContentValues> mBusPositionsCVV;
+    public static final String KEY_BUS_ROUTE = "bus_route";
 
 
     @Override
@@ -35,17 +38,23 @@ public class MapsActivity extends ActionBarActivity
         setContentView(R.layout.activity_main);
         Log.d(LOG_TAG, "onCreate: Content View has been set");
 
-        if (findViewById(R.id.container) != null){
+        if (findViewById(R.id.body) != null){
             if (savedInstanceState == null){
                 LocationFetchFragment locationFetchFragment = new LocationFetchFragment();
                 Log.d(LOG_TAG, "onCreate: invoking FragMgr");
                 getFragmentManager().beginTransaction()
-                        .add(R.id.container, locationFetchFragment)
+                        .add(R.id.body, locationFetchFragment)
                         .commit();
             }
             Log.d(LOG_TAG, "onCreate: done with invoking FragMgr");
         }
-
+        if (findViewById(R.id.header) != null && savedInstanceState == null){
+            HeaderFragment headerFragment = new HeaderFragment();
+            Log.d(LOG_TAG, "Created headerFragment, now add to header container");
+            getFragmentManager().beginTransaction()
+                    .add(R.id.header, headerFragment)
+                    .commit();
+        }
 
     }
 
@@ -64,7 +73,7 @@ public class MapsActivity extends ActionBarActivity
 
         FragmentTransaction transaction = getFragmentManager().beginTransaction();
         //Replace whatever is in this container with the new (maps) fragment.
-        transaction.replace(R.id.container, mapFragment);
+        transaction.replace(R.id.body, mapFragment);
         transaction.addToBackStack(null);
         transaction.commit();
 
@@ -79,9 +88,9 @@ public class MapsActivity extends ActionBarActivity
         double avgLat = 0, avgLng = 0;
         int busCount = 0;
         for (ContentValues busPosition:mBusPositionsCVV){
-            double lat = busPosition.getAsDouble("lat");
-            double lng = busPosition.getAsDouble("lng");
-            String marker = busPosition.getAsString("routeNum");
+            double lat = busPosition.getAsDouble(TrackerContract.LocationEntry.COLUMN_LATITUDE);
+            double lng = busPosition.getAsDouble(TrackerContract.LocationEntry.COLUMN_LONGITUDE);
+            String marker = busPosition.getAsString(TrackerContract.LocationEntry.COLUMN_ROUTE_NUM);
             LatLng point = new LatLng(lat, lng);
 
             //calculations to figure out a centre point for map zoom
@@ -103,5 +112,21 @@ public class MapsActivity extends ActionBarActivity
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(avgLat, avgLng), 11));
     }
 
+    public void onSpinnerChange(String busRoute){
+
+        Log.d(LOG_TAG, "starting func onSpinnerChange");
+
+        LocationFetchFragment locationFetchFragment = new LocationFetchFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(MapsActivity.KEY_BUS_ROUTE,busRoute );
+        locationFetchFragment.setArguments(bundle);
+
+        Log.d(LOG_TAG, "onSpinnerChange: invoking FragMgr");
+        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+        transaction.replace(R.id.body, locationFetchFragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
+
+    }
 
 }

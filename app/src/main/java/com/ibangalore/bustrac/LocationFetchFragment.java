@@ -1,12 +1,12 @@
 package com.ibangalore.bustrac;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +16,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import com.ibangalore.bustrac.data.TrackerContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,6 +42,7 @@ public class LocationFetchFragment extends Fragment{
     public final String LOG_TAG = LocationFetchFragment.class.getSimpleName();
     ArrayAdapter<String> mBusLocAdapter;
     Vector<ContentValues> mContentValuesVector;
+    String mBusRoute = "23";
 
     /* The calling activity must implement this interface */
     public interface OnBusItemSelectedListener {
@@ -50,12 +53,32 @@ public class LocationFetchFragment extends Fragment{
 
     //Constructor
     public LocationFetchFragment() {
-        Log.d(LOG_TAG, "empty constructor");
+        Log.d(LOG_TAG, "constructor");
+        Bundle bundle = getArguments();
+
+        if (bundle != null && bundle.containsKey(MapsActivity.KEY_BUS_ROUTE)){
+            mBusRoute = bundle.getString(MapsActivity.KEY_BUS_ROUTE);
+            Log.d(LOG_TAG, " in constructor, mBusRoute set to "+mBusRoute);
+
+        }
+        else {
+            Log.d(LOG_TAG, "Constructor - Didn't get route in bundle, falling back to default");
+            mBusRoute = "23";
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState){
+        Bundle  arguments = getArguments();
+        if (arguments != null){
+            if(arguments.containsKey(MapsActivity.KEY_BUS_ROUTE)){
+                mBusRoute = arguments.getString(MapsActivity.KEY_BUS_ROUTE);
+                Log.d(LOG_TAG, "onCreateView, mBusRoute set to "+mBusRoute);
+
+            }
+
+        }
         ArrayList<String> busLocArrayList = new ArrayList<>();
         busLocArrayList.add("[39.96/-75.15] to Chestnut Hill, NorthBound (5617)");
         busLocArrayList.add("[39.91/-75.16] to Broad - Oregon, SouthBound (8235)");
@@ -69,14 +92,14 @@ public class LocationFetchFragment extends Fragment{
                 busLocArrayList);
 
 
-        View rootView = inflater.inflate(R.layout.bus_location_fragment, container, false);
+        View rootView = inflater.inflate(R.layout.bus_location_fragment, null, false);
         ListView listView = (ListView) rootView.findViewById(R.id.listview_bus_coords);
         listView.setAdapter(mBusLocAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                double lat = mContentValuesVector.get(position).getAsDouble("lat");
-                double lng = mContentValuesVector.get(position).getAsDouble("lng");
+                double lat = mContentValuesVector.get(position).getAsDouble(TrackerContract.LocationEntry.COLUMN_LATITUDE);
+                double lng = mContentValuesVector.get(position).getAsDouble(TrackerContract.LocationEntry.COLUMN_LONGITUDE);
                 Log.d(LOG_TAG, "Lat = "+lat+" and Long = "+lng+ "at position "+position);
                 try {
                     Log.d(LOG_TAG, "Content Values at 3 = " + mContentValuesVector.get(3).toString());
@@ -142,12 +165,25 @@ public class LocationFetchFragment extends Fragment{
                 busLocArrayList.add("Not able to provide you data now");
                 busLocArrayList.add("Come back later and try your luck");
             }
+/*
+            else{
+                Uri locationUri = TrackerContract.LocationEntry.CONTENT_URI;
+                AsyncQueryHandler handler =
+                        new AsyncQueryHandler(getActivity().getContentResolver()) {};
+
+                //insert rows in table location for each location returned by API call
+                for (ContentValues bus:mContentValuesVector){
+                    handler.startInsert(0, null, locationUri, bus);
+                }
+            }
+*/
 
             return busLocArrayList;
         }
 
         @Override
         protected void onPostExecute(ArrayList<String> busLocArrayList){
+            Log.d(LOG_TAG, "Reached onPostExecute");
             progressDialog.dismiss();
             Toast.makeText(getActivity(), "onPostExecute", Toast.LENGTH_LONG);
             if (busLocArrayList == null)
@@ -160,6 +196,12 @@ public class LocationFetchFragment extends Fragment{
             mBusLocAdapter.addAll(busLocArrayList);
             mBusLocAdapter.notifyDataSetChanged();
 
+            //insert rows in table location for each location returned by API call
+            Log.d(LOG_TAG, "About to call Content resolver with Insert");
+            Uri locationUri = TrackerContract.LocationEntry.CONTENT_URI;
+            for (ContentValues bus:mContentValuesVector){
+                getActivity().getContentResolver().insert(locationUri, bus);
+            }
         }
 
         private ArrayList<String> fetchBusLocations(){
@@ -171,7 +213,8 @@ public class LocationFetchFragment extends Fragment{
 
             URL url = null;
             String baseRouteUri = "http://www3.septa.org/transitview/bus_route_data";
-            String routeNum = "23";
+            String routeNum = mBusRoute;
+            Log.d(LOG_TAG, "mBusRoute = "+mBusRoute);
 
             String locationJsonStr = null;
 
@@ -179,6 +222,7 @@ public class LocationFetchFragment extends Fragment{
 
                 Uri uri = Uri.parse(baseRouteUri).buildUpon().appendPath(routeNum).build();
                 url = new URL(uri.toString());
+                Log.d(LOG_TAG, "Fetching URL "+ url);
                 /* debug  url = new URL("http://www3.septa.org/transitview/bus_route_data/23");*/
             }catch (MalformedURLException e){
                 e.printStackTrace();
@@ -243,12 +287,17 @@ public class LocationFetchFragment extends Fragment{
                     errorArrayList.add("fetchBusLocation: Got individual bus "+i+" = "+busObject.toString());
 
                     //Separating out the individual elements and storing them in a ContentValue Vector
-                    busValues.put("lat", busObject.getString("lat"));
-                    busValues.put("lng", busObject.getString("lng"));
-                    busValues.put("vehicleID", busObject.getString("VehicleID"));
-                    busValues.put("Direction", busObject.getString("Direction"));
-                    busValues.put("destination", busObject.getString("destination"));
-                    busValues.put("routeNum", "23"); //this needs to be parameterized
+                    busValues.put(TrackerContract.LocationEntry.COLUMN_LATITUDE,
+                            busObject.getString("lat"));
+                    busValues.put(TrackerContract.LocationEntry.COLUMN_LONGITUDE,
+                            busObject.getString("lng"));
+                    busValues.put(TrackerContract.LocationEntry.COLUMN_VEHICLE_ID,
+                            busObject.getString("VehicleID"));
+                    busValues.put(TrackerContract.LocationEntry.COLUMN_DESTINATION,
+                            busObject.getString("Direction"));
+                    busValues.put(TrackerContract.LocationEntry.COLUMN_DESTINATION,
+                            busObject.getString("destination"));
+                    busValues.put(TrackerContract.LocationEntry.COLUMN_ROUTE_NUM, mBusRoute); //this needs to be parameterized
 
                     mContentValuesVector.add(busValues);
                     busValues = new ContentValues();

@@ -4,4 +4,12 @@
     <string name="app_name">BusTrac</string>
     <string name="title_activity_maps">Bus Map</string>
 
+    <string-array name="route_nums_array">
+        <item>20</item>
+        <item>21</item>
+        <item>22</item>
+        <item>23</item>
+        <item>24</item>
+    </string-array>
+
 </resources>
