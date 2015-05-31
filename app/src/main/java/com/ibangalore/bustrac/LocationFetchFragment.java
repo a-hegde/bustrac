@@ -121,6 +121,43 @@ public class LocationFetchFragment extends Fragment{
             }
         });
 
+        /****Temporarily populate a few rows into route master****/
+        Uri routesUri = TrackerContract.RoutesMaster.CONTENT_URI;
+
+        //first delete all rows from route master table
+        int delRows = getActivity().getContentResolver().delete(routesUri, null, null);
+        Log.d(LOG_TAG, "Deleted rows = "+delRows);
+
+        //now create ContentValues of rows to insert.
+        Log.d(LOG_TAG, "Inserting into routes master ");
+        ContentValues[] routeMasterCV = new ContentValues[4];
+
+        routeMasterCV[0]  = new ContentValues();
+        routeMasterCV[1]  = new ContentValues();
+        routeMasterCV[2]  = new ContentValues();
+        routeMasterCV[3]  = new ContentValues();
+
+        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
+        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
+        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
+        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
+
+        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
+        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
+        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
+        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
+
+        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Parx Casino");
+        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 54th-City");
+        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 20th-Johnston");
+        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Pulaski-Hunting Park");
+
+        for (ContentValues routeCV:routeMasterCV){
+            Uri insertUri = getActivity().getContentResolver().insert(routesUri, routeCV);
+            Log.d(LOG_TAG, "Inserted with Uri = "+insertUri);
+        }
+
+
         return rootView;
     }
 

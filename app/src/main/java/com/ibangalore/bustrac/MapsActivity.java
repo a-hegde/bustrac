@@ -29,6 +29,8 @@ public class MapsActivity extends ActionBarActivity
     private Double mLongitude = 0.0;
     Vector<ContentValues> mBusPositionsCVV;
     public static final String KEY_BUS_ROUTE = "bus_route";
+    public static final Double DEFAULT_LATITUDE = 0.0;
+    public static final Double DEFAULT_LONGITUDE = 0.0;
 
 
     @Override
@@ -63,6 +65,11 @@ public class MapsActivity extends ActionBarActivity
         super.onResume();
     }
 
+
+    /*********
+     * Callback function called by LocationFetchFragment when any list item is selected
+     * Parameter ContentValues Vector of all the bus locations for particular route.
+     ********/
     public void onBusItemSelected(Vector<ContentValues> busPositionsCVV){
 
         Log.d(LOG_TAG, "starting func onBusItemSelected");
@@ -83,6 +90,11 @@ public class MapsActivity extends ActionBarActivity
 
     }
 
+    /************************
+     * Callback function invoked once the map is ready to render.
+     * This is the point to specify where the maps is to be centered and what zoom.
+     * Also set lat long for the markers that will show up.
+    *************************/
     @Override
     public void onMapReady(GoogleMap map){
         double avgLat = 0, avgLng = 0;
@@ -101,11 +113,15 @@ public class MapsActivity extends ActionBarActivity
                     .title(marker));
         }
 
-        if(busCount >0) {
+        if(busCount >1) {
         //Find the mean point across all the points by diving the sum of latitudes
         // (and longitudes) by total number of points
             avgLat /= busCount;
             avgLng /= busCount;
+        }
+        else{
+            avgLat = DEFAULT_LATITUDE;
+            avgLng = DEFAULT_LONGITUDE;
         }
 
         map.setMapType(GoogleMap.MAP_TYPE_TERRAIN);

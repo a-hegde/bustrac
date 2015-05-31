@@ -1,7 +1,6 @@
 package com.ibangalore.bustrac.data;
 
 import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
@@ -46,14 +45,14 @@ public class TrackerContract {
 
      }
 
-    public static final class RoutesEntry implements BaseColumns{
-        public static final String TABLE_NAME = "routes";
+    public static final class RoutesMaster implements BaseColumns{
+        public static final String TABLE_NAME = "routes_master";
+
+        //route number need not be a number - it is often alphanumeric
         public static final String COLUMN_ROUTE_NUM = "route_num";
 
-        public static final String COLUMN_FLAVOR = "flavor";
-        public static final String COLUMN_START_POINT = "start_point";
-        public static final String COLUMN_END_POINT = "end_point";
-
+        public static final String COLUMN_ROUTE_DESC = "route_name";
+        public static final String COLUMN_DIRECTION = "direction";
 
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon()
                 .appendPath(PATH_ROUTES).build();
@@ -64,8 +63,8 @@ public class TrackerContract {
                 + CONTENT_AUTHORITY + "/" + PATH_LOCATION;
 
 
-        public static final Uri buildRoutesUri(int routeNum){
-            return ContentUris.withAppendedId(CONTENT_URI, routeNum);
+        public static final Uri buildRoutesUri(String routeNum){
+            return CONTENT_URI.buildUpon().appendPath(routeNum).build();
         }
 
 

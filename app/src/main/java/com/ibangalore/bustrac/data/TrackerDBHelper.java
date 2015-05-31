@@ -12,12 +12,12 @@ import android.util.Log;
  */
 public class TrackerDBHelper extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "bustrac.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     private static final String LOG_TAG = TrackerDBHelper.class.getSimpleName();
 
     public TrackerDBHelper(Context context){
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
-
+        Log.d(LOG_TAG, "Constructor");
     }
     @Override
     public void onCreate(SQLiteDatabase tracDB) {
@@ -31,31 +31,32 @@ public class TrackerDBHelper extends SQLiteOpenHelper {
                 + TrackerContract.LocationEntry.COLUMN_LONGITUDE + " REAL NOT NULL, "
                 + TrackerContract.LocationEntry.COLUMN_VEHICLE_ID + " INTEGER ); " ;
 
-        final String SQL_CREATE_ROUTE_TABLE = "CREATE TABLE " + TrackerContract.RoutesEntry.TABLE_NAME
+        final String SQL_CREATE_ROUTE_TABLE = "CREATE TABLE " + TrackerContract.RoutesMaster.TABLE_NAME
                 + " ( " + TrackerContract.LocationEntry._ID + " INTEGER PRIMARY KEY, "
-                + TrackerContract.RoutesEntry.COLUMN_ROUTE_NUM + " INTEGER NOT NULL, "
-                + TrackerContract.RoutesEntry.COLUMN_FLAVOR + " TEXT, "
-                + TrackerContract.RoutesEntry.COLUMN_START_POINT + " TEXT, "
-                + TrackerContract.RoutesEntry.COLUMN_END_POINT + " INTEGER ); " ;
+                + TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM + " INTEGER NOT NULL, "
+                + TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC + " TEXT, "
+                + TrackerContract.RoutesMaster.COLUMN_DIRECTION + " TEXT ); " ;
 
-        Log.d(LOG_TAG, "About to drop table location");
+
+
+        Log.d(LOG_TAG, "About to drop table location and routes");
         try{
             tracDB.execSQL("drop table "+ TrackerContract.LocationEntry.TABLE_NAME+" ;");
+            tracDB.execSQL("drop table "+ TrackerContract.RoutesMaster.TABLE_NAME+" ;");
         }catch (SQLiteException e){
             Log.d(LOG_TAG, "No existing table, carry on. Error - " + e.toString());
         }
 
-
-
         Log.d(LOG_TAG, "About to create table location");
         tracDB.execSQL(SQL_CREATE_LOCATION_TABLE);
-//        tracDB.execSQL(SQL_CREATE_ROUTE_TABLE);
+        tracDB.execSQL(SQL_CREATE_ROUTE_TABLE);
 
         Log.d(LOG_TAG, "Done with table creation");
     }
 
+
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        this.onCreate(db);
     }
 }
