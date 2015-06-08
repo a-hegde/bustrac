@@ -1,8 +1,8 @@
 package com.ibangalore.bustrac;
 
+import android.app.FragmentTransaction;
 import android.content.ContentValues;
 import android.os.Bundle;
-import android.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 
@@ -10,9 +10,12 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.ibangalore.bustrac.data.TrackerContract;
+import com.ibangalore.bustrac.kml.Placemark;
+import com.ibangalore.bustrac.kml.RouteDataSet;
 
 import java.util.Vector;
 
@@ -27,7 +30,10 @@ public class MapsActivity extends ActionBarActivity
     private String mRoute = "";
     private Double mLatitude = 0.0;
     private Double mLongitude = 0.0;
+
     Vector<ContentValues> mBusPositionsCVV;
+    RouteDataSet mRouteDataSet;
+
     public static final String KEY_BUS_ROUTE = "bus_route";
     public static final Double DEFAULT_LATITUDE = 0.0;
     public static final Double DEFAULT_LONGITUDE = 0.0;
@@ -70,7 +76,7 @@ public class MapsActivity extends ActionBarActivity
      * Callback function called by LocationFetchFragment when any list item is selected
      * Parameter ContentValues Vector of all the bus locations for particular route.
      ********/
-    public void onBusItemSelected(Vector<ContentValues> busPositionsCVV){
+    public void onBusItemSelected(Vector<ContentValues> busPositionsCVV, RouteDataSet routeDataSet){
 
         Log.d(LOG_TAG, "starting func onBusItemSelected");
 
@@ -86,6 +92,7 @@ public class MapsActivity extends ActionBarActivity
 
             //Assign values to member variable
         mBusPositionsCVV = busPositionsCVV;
+        mRouteDataSet = routeDataSet;
         //mRoute = route; mLatitude = latitude; mLongitude = longitude;
 
     }
@@ -113,6 +120,16 @@ public class MapsActivity extends ActionBarActivity
                     .title(marker));
         }
 
+        Log.d(LOG_TAG, "About to add route to map");
+        for(Placemark placemark:mRouteDataSet.getPlacemarks()){
+            Log.d(LOG_TAG, "Adding route point to map "+placemark.getStartPoint().toString());
+            map.addMarker(new MarkerOptions()
+                            .position(placemark.getStartPoint())
+                            .icon(BitmapDescriptorFactory.fromResource(android.R.drawable.presence_online))
+            );
+        }
+
+//Code to figure out where to zoom the map based on the bus locations we got.
         if(busCount >1) {
         //Find the mean point across all the points by diving the sum of latitudes
         // (and longitudes) by total number of points

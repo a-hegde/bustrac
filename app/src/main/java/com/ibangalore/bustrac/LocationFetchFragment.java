@@ -18,10 +18,14 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.ibangalore.bustrac.data.TrackerContract;
+import com.ibangalore.bustrac.kml.RouteDataSet;
+import com.ibangalore.bustrac.kml.TransitSAXHandler;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,6 +37,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
 /**
  * Class to fetch the current bus location by fetching from APIs exposed by Transit Agency
  */
@@ -42,12 +49,13 @@ public class LocationFetchFragment extends Fragment{
     public final String LOG_TAG = LocationFetchFragment.class.getSimpleName();
     ArrayAdapter<String> mBusLocAdapter;
     Vector<ContentValues> mContentValuesVector;
+    RouteDataSet mRouteDataSet;
     String mBusRoute = "23";
 
     /* The calling activity must implement this interface */
     public interface OnBusItemSelectedListener {
         //Called by LocationFetchFragment when an item from the list view is selected
-        public void onBusItemSelected(Vector<ContentValues> busPositionsCVV);
+        public void onBusItemSelected(Vector<ContentValues> busPositionsCVV, RouteDataSet routeDataSet);
     }
 
 
@@ -107,7 +115,7 @@ public class LocationFetchFragment extends Fragment{
                 }catch (ArrayIndexOutOfBoundsException e){
                     Log.d(LOG_TAG, "Looks like we have 3 or less buses showing up");
                 }
-                mCallback.onBusItemSelected(mContentValuesVector);
+                mCallback.onBusItemSelected(mContentValuesVector, mRouteDataSet);
 
             }
         });
@@ -130,33 +138,44 @@ public class LocationFetchFragment extends Fragment{
 
         //now create ContentValues of rows to insert.
         Log.d(LOG_TAG, "Inserting into routes master ");
-        ContentValues[] routeMasterCV = new ContentValues[4];
+        ContentValues[] routeMasterCV = new ContentValues[6];
+
+//        for (ContentValues routeCV:routeMasterCV)
+//            routeCV = new ContentValues();
 
         routeMasterCV[0]  = new ContentValues();
         routeMasterCV[1]  = new ContentValues();
         routeMasterCV[2]  = new ContentValues();
         routeMasterCV[3]  = new ContentValues();
+        routeMasterCV[4]  = new ContentValues();
+        routeMasterCV[5]  = new ContentValues();
 
         routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
         routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
         routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
         routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
+        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "4");
+        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "30");
 
         routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
         routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
         routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
         routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
+        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Fern Rock Transportation Center to Broad-Pattison");
+        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Amtrak 30th Street Station to 69th Street Transportation Center");
+
 
         routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Parx Casino");
         routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 54th-City");
         routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 20th-Johnston");
         routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Pulaski-Hunting Park");
+        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Broad-Pattison");
+        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Amtrak 30th Street Station");
 
         for (ContentValues routeCV:routeMasterCV){
             Uri insertUri = getActivity().getContentResolver().insert(routesUri, routeCV);
             Log.d(LOG_TAG, "Inserted with Uri = "+insertUri);
         }
-
 
         return rootView;
     }
@@ -214,6 +233,8 @@ public class LocationFetchFragment extends Fragment{
                 }
             }
 */
+            fetchRouteMap();
+            //busLocArrayList.addAll(fetchRouteMap());  //ToDo - discard this line and go back to getting RouteDataSet
 
             return busLocArrayList;
         }
@@ -250,6 +271,7 @@ public class LocationFetchFragment extends Fragment{
 
             URL url = null;
             String baseRouteUri = "http://www3.septa.org/transitview/bus_route_data";
+            String baseKMLUri = "http://www3.septa.org/transitview/kml";
             String routeNum = mBusRoute;
             Log.d(LOG_TAG, "mBusRoute = "+mBusRoute);
 
@@ -261,6 +283,9 @@ public class LocationFetchFragment extends Fragment{
                 url = new URL(uri.toString());
                 Log.d(LOG_TAG, "Fetching URL "+ url);
                 /* debug  url = new URL("http://www3.septa.org/transitview/bus_route_data/23");*/
+                Uri uriKML = Uri.parse(baseKMLUri).buildUpon().appendPath(routeNum).build();
+
+
             }catch (MalformedURLException e){
                 e.printStackTrace();
                 errorArrayList.add("MalformedURLException");
@@ -360,5 +385,54 @@ public class LocationFetchFragment extends Fragment{
 
         } //End method fetchBusLocations
 
-    } //End private class DownloadBusLocation
+        /**************
+         * Fetch the route information in KML format
+         * parse using SAX (Simple API for XML) Parser
+         *
+         * ************/
+
+        private  void fetchRouteMap() {
+            mRouteDataSet = null;
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            StringBuffer buffer = null;
+            ArrayList<String> errorArrayList = new ArrayList<String>();
+
+            Log.d(LOG_TAG, "Func fetchRouteMap");
+
+            URL url = null;
+            String baseKMLUri = "http://www3.septa.org/transitview/kml";
+            String routeNum = mBusRoute;
+
+            try {
+                Uri uri = Uri.parse(baseKMLUri).buildUpon().appendPath(routeNum).build();
+                url = new URL(uri.toString());
+                Log.d(LOG_TAG, "Fetching URL " + url);
+            } catch (MalformedURLException e) {
+                Log.d(LOG_TAG, "Error in URL Fetch: "+e);
+                e.printStackTrace();
+            }
+
+            try{
+                Log.d(LOG_TAG,"Starting the whole SAXFactory stuff");
+                SAXParserFactory factory = SAXParserFactory.newInstance();
+                SAXParser parser = factory.newSAXParser();
+                XMLReader xmlReader = parser.getXMLReader();
+                TransitSAXHandler saxHandler = new TransitSAXHandler();
+                xmlReader.setContentHandler(saxHandler);
+                xmlReader.parse(new InputSource(url.openStream()));
+                mRouteDataSet = saxHandler.getParsedData();
+
+                Log.d(LOG_TAG,"Finished parsing KML file. Result = " +'\n'+mRouteDataSet.toString());
+                errorArrayList.add("Finished parsing KML file. Result = " +'\n'+mRouteDataSet.toString());
+
+            } catch (Exception e){
+                Log.d(LOG_TAG, "SAX related exception: " + e);
+            }
+
+//            return errorArrayList;
+        } //End method fetchRouteMap
+
+
+        } //End private class DownloadBusLocation
 }
