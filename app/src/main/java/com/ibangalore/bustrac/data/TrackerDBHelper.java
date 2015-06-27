@@ -37,12 +37,19 @@ public class TrackerDBHelper extends SQLiteOpenHelper {
                 + TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC + " TEXT, "
                 + TrackerContract.RoutesMaster.COLUMN_DIRECTION + " TEXT ); " ;
 
+        final String SQL_CREATE_STATIONS_TABLE = "CREATE TABLE " + TrackerContract.StationsMaster.TABLE_NAME
+                + " ( " + TrackerContract.StationsMaster._ID + " INTEGER PRIMARY KEY, "
+                + TrackerContract.StationsMaster.COLUMN_STATION_NAME + " INTEGER NOT NULL, "
+                + TrackerContract.StationsMaster.COLUMN_STATION_ID + " TEXT, "
+                + TrackerContract.StationsMaster.COLUMN_LATITUDE + " REAL, "
+                + TrackerContract.StationsMaster.COLUMN_LONGITUDE + " REAL); " ;
 
 
-        Log.d(LOG_TAG, "About to drop table location and routes");
+        Log.d(LOG_TAG, "About to drop table location, routes and stations");
         try{
             tracDB.execSQL("drop table "+ TrackerContract.LocationEntry.TABLE_NAME+" ;");
             tracDB.execSQL("drop table "+ TrackerContract.RoutesMaster.TABLE_NAME+" ;");
+            tracDB.execSQL("drop table "+ TrackerContract.StationsMaster.TABLE_NAME+" ;");
         }catch (SQLiteException e){
             Log.d(LOG_TAG, "No existing table, carry on. Error - " + e.toString());
         }
@@ -50,6 +57,7 @@ public class TrackerDBHelper extends SQLiteOpenHelper {
         Log.d(LOG_TAG, "About to create table location");
         tracDB.execSQL(SQL_CREATE_LOCATION_TABLE);
         tracDB.execSQL(SQL_CREATE_ROUTE_TABLE);
+        tracDB.execSQL(SQL_CREATE_STATIONS_TABLE);
 
         Log.d(LOG_TAG, "Done with table creation");
     }

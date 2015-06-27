@@ -96,9 +96,7 @@ public class LocationFetchFragment extends Fragment{
         mBusLocAdapter = new ArrayAdapter<String>(
                 getActivity(),                        // The current context (this activity)
                 R.layout.bus_list_item,       // The name of the layout ID
-//                R.id.bus_list_item_textview,        // The ID of the textview to populate.
                 busLocArrayList);
-
 
         View rootView = inflater.inflate(R.layout.bus_location_fragment, null, false);
         ListView listView = (ListView) rootView.findViewById(R.id.listview_bus_coords);
@@ -204,7 +202,9 @@ public class LocationFetchFragment extends Fragment{
     }
 
     private class DownloadBusLocation extends AsyncTask<Void, Void, ArrayList<String>>{
+
         ProgressDialog progressDialog = new ProgressDialog(getActivity());
+        private final String LOG_TAG = DownloadBusLocation.class.getSimpleName();
 
         @Override
         protected void onPreExecute(){

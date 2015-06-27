@@ -51,7 +51,7 @@ public class Placemark{
     }
     public LatLng getStartPoint() { return startPoint;}
 
-    public LatLng getEndPointPoint() {
+    public LatLng getEndPoint() {
         if(type == LINESTRING)
             return endPoint;
         else // Points don't have an endpoint

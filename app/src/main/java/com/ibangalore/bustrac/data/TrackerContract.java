@@ -13,8 +13,10 @@ public class TrackerContract {
 
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://"+ CONTENT_AUTHORITY);
 
+    //A path location for each table in our database so they can be accessed via content provider
     public static final String PATH_LOCATION = "location";
     public static final String PATH_ROUTES = "routes";
+    public static final String PATH_STATIONS = "stations";
 
 
     public static final class LocationEntry implements BaseColumns{
@@ -67,8 +69,39 @@ public class TrackerContract {
             return CONTENT_URI.buildUpon().appendPath(routeNum).build();
         }
 
+    } //end static class RoutesMaster
+
+    // Contract Class for "stations" master table, which contains columns
+    // station_name, station_id, latitude, longitude
+    public static final class StationsMaster implements BaseColumns{
+        public static final String TABLE_NAME = "stations";
+
+        //route number need not be a number - it is often alphanumeric
+        public static final String COLUMN_STATION_NAME = "station_name";
+        public static final String COLUMN_STATION_ID = "station_id";
+        public static final String COLUMN_LATITUDE = "latitude";
+        public static final String COLUMN_LONGITUDE = "longitude";
+
+
+        public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon()
+                .appendPath(PATH_STATIONS).build();
+
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/"
+                + CONTENT_AUTHORITY + "/" + PATH_STATIONS;
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/"
+                + CONTENT_AUTHORITY + "/" + PATH_STATIONS;
+
+
+        public static final Uri buildStationsUriFromID(String stationId){
+            return CONTENT_URI.buildUpon().appendPath(stationId).build();
+        }
+
+        public static final Uri buildStationsUriFromName(String stationName){
+            return CONTENT_URI.buildUpon().appendPath(stationName).build();
+        }
 
     }
+
 
 
 

@@ -41,7 +41,6 @@
             android:exported="false"
             android:syncable="true" />
 
-
     </application>
 
 </manifest>
