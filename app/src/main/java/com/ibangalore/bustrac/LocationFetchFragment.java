@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -128,52 +129,7 @@ public class LocationFetchFragment extends Fragment{
         });
 
         /****Temporarily populate a few rows into route master****/
-        Uri routesUri = TrackerContract.RoutesMaster.CONTENT_URI;
-
-        //first delete all rows from route master table
-        int delRows = getActivity().getContentResolver().delete(routesUri, null, null);
-        Log.d(LOG_TAG, "Deleted rows = "+delRows);
-
-        //now create ContentValues of rows to insert.
-        Log.d(LOG_TAG, "Inserting into routes master ");
-        ContentValues[] routeMasterCV = new ContentValues[6];
-
-//        for (ContentValues routeCV:routeMasterCV)
-//            routeCV = new ContentValues();
-
-        routeMasterCV[0]  = new ContentValues();
-        routeMasterCV[1]  = new ContentValues();
-        routeMasterCV[2]  = new ContentValues();
-        routeMasterCV[3]  = new ContentValues();
-        routeMasterCV[4]  = new ContentValues();
-        routeMasterCV[5]  = new ContentValues();
-
-        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
-        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
-        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
-        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
-        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "4");
-        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "30");
-
-        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
-        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
-        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
-        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
-        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Fern Rock Transportation Center to Broad-Pattison");
-        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Amtrak 30th Street Station to 69th Street Transportation Center");
-
-
-        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Parx Casino");
-        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 54th-City");
-        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 20th-Johnston");
-        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Pulaski-Hunting Park");
-        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Broad-Pattison");
-        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Amtrak 30th Street Station");
-
-        for (ContentValues routeCV:routeMasterCV){
-            Uri insertUri = getActivity().getContentResolver().insert(routesUri, routeCV);
-            Log.d(LOG_TAG, "Inserted with Uri = "+insertUri);
-        }
+        populateMasterTables();
 
         return rootView;
     }
@@ -200,6 +156,93 @@ public class LocationFetchFragment extends Fragment{
             + " must implement OnBusItemSelectedListener");
         }
     }
+
+    private void populateMasterTables(){
+        Uri routesUri = TrackerContract.RoutesMaster.CONTENT_URI;
+        Uri stationsUri = TrackerContract.StationsMaster.CONTENT_URI;
+
+        // delete all rows from route master table
+        int delRows = getActivity().getContentResolver().delete(routesUri, null, null);
+        Log.d(LOG_TAG, "Deleted rows = "+delRows);
+
+        //now create ContentValues of rows to insert.
+        Log.d(LOG_TAG, "Inserting into routes master ");
+        ContentValues[] routeMasterCV = new ContentValues[6];
+
+        routeMasterCV[0]  = new ContentValues();
+        routeMasterCV[1]  = new ContentValues();
+        routeMasterCV[2]  = new ContentValues();
+        routeMasterCV[3]  = new ContentValues();
+        routeMasterCV[4]  = new ContentValues();
+        routeMasterCV[5]  = new ContentValues();
+
+        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
+        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "1");
+        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
+        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "2");
+        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "4");
+        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_NUM, "30");
+
+        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
+        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Parx Casino to 54th-City");
+        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
+        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "20th-Johnston to Pulaski-Hunting Park");
+        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Fern Rock Transportation Center to Broad-Pattison");
+        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_ROUTE_DESC, "Amtrak 30th Street Station to 69th Street Transportation Center");
+
+        routeMasterCV[0].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Parx Casino");
+        routeMasterCV[1].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 54th-City");
+        routeMasterCV[2].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To 20th-Johnston");
+        routeMasterCV[3].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Pulaski-Hunting Park");
+        routeMasterCV[4].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Broad-Pattison");
+        routeMasterCV[5].put(TrackerContract.RoutesMaster.COLUMN_DIRECTION, "To Amtrak 30th Street Station");
+
+        for (ContentValues routeCV:routeMasterCV){
+            Uri insertUri = getActivity().getContentResolver().insert(routesUri, routeCV);
+            Log.d(LOG_TAG, "Inserted with Uri = "+insertUri);
+        }
+
+        // Populate the station master from a CSV file
+
+        // delete all rows from route master table
+        int delStationRows = getActivity().getContentResolver().delete(stationsUri, null, null);
+        Log.d(LOG_TAG, "Deleted rows = "+delStationRows);
+
+        // Create ContentValues to hold rows for insert into Station Master.
+        ArrayList<ContentValues> stationMasterCV = new ArrayList<ContentValues>();
+
+        // First read csv file from Assets folder, the parse the columns and insert into ContentValues array
+
+        AssetManager manager = getActivity().getAssets();
+        InputStream inStream = null;
+        try{
+            inStream = manager.open("station_id_name.csv");
+            BufferedReader buffer = new BufferedReader(new InputStreamReader(inStream));
+            String line = "";
+            while ((line = buffer.readLine())!= null){
+                String[] columns = line.split(",");
+                ContentValues cv = new ContentValues();
+                cv.put(TrackerContract.StationsMaster.COLUMN_STATION_ID, columns[0]);
+                cv.put(TrackerContract.StationsMaster.COLUMN_STATION_NAME, columns[1]);
+                // put cv into Content Value array defined earlier
+                stationMasterCV.add(cv);
+            }
+        } catch (IOException e){
+            e.printStackTrace();
+            Log.d(LOG_TAG, "Problem reading CSV file with station info");
+        }
+
+        //Now insert content values into stations table using content provider framework
+        Log.d(LOG_TAG, "Inserting into station master ");
+        for (ContentValues stationCV:stationMasterCV){
+            Uri insertUri = getActivity().getContentResolver().insert(stationsUri, stationCV);
+            Log.d(LOG_TAG, "Inserted with Uri = "+insertUri);
+        }
+
+
+
+    }
+
 
     private class DownloadBusLocation extends AsyncTask<Void, Void, ArrayList<String>>{
 

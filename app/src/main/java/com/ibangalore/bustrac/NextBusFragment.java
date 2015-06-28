@@ -3,6 +3,7 @@ package com.ibangalore.bustrac;
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -11,9 +12,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.ibangalore.bustrac.UXAssets.ArrivalsLViewAdapter;
 import com.ibangalore.bustrac.UXAssets.ArrivalsRowItem;
+import com.ibangalore.bustrac.data.TrackerContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,6 +44,7 @@ public class NextBusFragment extends Fragment {
     private static final String LOG_TAG=NextBusFragment.class.getSimpleName();
     Vector<ContentValues> mContentValuesVector;
     ArrivalsLViewAdapter mArrivalsAdapter;
+    String mStationCode = "90401";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -52,6 +56,9 @@ public class NextBusFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.next_bus, null, false);
         ListView listView = (ListView) rootView.findViewById(R.id.listview_bus_arrivals);
         listView.setAdapter(mArrivalsAdapter);
+
+        TextView stationNameTV = (TextView) rootView.findViewById(R.id.station_textView);
+
 
         new DownloadArrivals().execute();
         return rootView;
@@ -95,8 +102,8 @@ public class NextBusFragment extends Fragment {
             URL url = null;
             String baseArrivalsUri = "http://www3.septa.org/hackathon/Arrivals";
 
-/*debug*/   String stationCode = "90401";  //mStationCode;
-//            Log.d(LOG_TAG, "Station Code = " + mStationCode);
+            String stationCode = mStationCode;
+            Log.d(LOG_TAG, "Station Code = " + mStationCode);
 
             String arrivalsJsonStr = null;
 
@@ -250,7 +257,26 @@ public class NextBusFragment extends Fragment {
         protected void onPostExecute(ArrayList<ArrivalsRowItem> arrivalsArrayList) {
             Log.d(LOG_TAG, "Reached onPostExecute");
             progressDialog.dismiss();
+            String stationName=null;
 
+            //Get the station name from the station id to put at top of screen.
+            Uri uri = TrackerContract.StationsMaster.buildStationsUriFromID(mStationCode);
+            Log.d(LOG_TAG,"Uri we constructed is "+uri);
+            Cursor c = getActivity().getContentResolver().query(
+                    uri,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+            while (c.moveToNext()){
+                stationName = c.getString(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_NAME));
+            }
+
+            TextView stationNameTV = (TextView) getActivity().findViewById(R.id.station_textView);
+            stationNameTV.setText(stationName);
+
+            // Populate the arrivals Array List we fetched in the background execution
             if (arrivalsArrayList == null)
                 return;
             for (ArrivalsRowItem bus : arrivalsArrayList) {
@@ -261,8 +287,8 @@ public class NextBusFragment extends Fragment {
             mArrivalsAdapter.addAll(arrivalsArrayList);
             mArrivalsAdapter.notifyDataSetChanged();
 
-        }
+        } //End method postExecute
 
-    }
+    } //end private class DownloadArrivals
 
 }

@@ -100,7 +100,11 @@ public class TrackerContract {
             return CONTENT_URI.buildUpon().appendPath(stationName).build();
         }
 
-    }
+        public static String getStationIdFromUri(Uri uri){
+            return uri.getPathSegments().get(1);
+        }
+
+    } //end static class StationsMaster
 
 
 

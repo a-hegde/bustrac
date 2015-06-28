@@ -12,7 +12,7 @@ import android.util.Log;
  */
 public class TrackerDBHelper extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "bustrac.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
     private static final String LOG_TAG = TrackerDBHelper.class.getSimpleName();
 
     public TrackerDBHelper(Context context){
@@ -39,8 +39,8 @@ public class TrackerDBHelper extends SQLiteOpenHelper {
 
         final String SQL_CREATE_STATIONS_TABLE = "CREATE TABLE " + TrackerContract.StationsMaster.TABLE_NAME
                 + " ( " + TrackerContract.StationsMaster._ID + " INTEGER PRIMARY KEY, "
-                + TrackerContract.StationsMaster.COLUMN_STATION_NAME + " INTEGER NOT NULL, "
-                + TrackerContract.StationsMaster.COLUMN_STATION_ID + " TEXT, "
+                + TrackerContract.StationsMaster.COLUMN_STATION_ID + " INTEGER NOT NULL UNIQUE, "
+                + TrackerContract.StationsMaster.COLUMN_STATION_NAME + " TEXT, "
                 + TrackerContract.StationsMaster.COLUMN_LATITUDE + " REAL, "
                 + TrackerContract.StationsMaster.COLUMN_LONGITUDE + " REAL); " ;
 

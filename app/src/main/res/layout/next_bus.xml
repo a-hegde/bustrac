@@ -23,7 +23,7 @@
             android:layout_weight="3"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:text="Trinity Circle"
-            android:id="@+id/textView"
+            android:id="@+id/station_textView"
             android:layout_gravity="bottom"
             android:textAlignment="center" />
     </LinearLayout>
