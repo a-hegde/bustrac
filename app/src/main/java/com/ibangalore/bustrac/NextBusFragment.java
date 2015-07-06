@@ -1,6 +1,7 @@
 package com.ibangalore.bustrac;
 
 import android.app.Fragment;
+import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -11,9 +12,19 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.ibangalore.bustrac.UXAssets.ArrivalsLViewAdapter;
 import com.ibangalore.bustrac.UXAssets.ArrivalsRowItem;
 import com.ibangalore.bustrac.data.TrackerContract;
@@ -45,6 +56,10 @@ public class NextBusFragment extends Fragment {
     Vector<ContentValues> mContentValuesVector;
     ArrivalsLViewAdapter mArrivalsAdapter;
     String mStationCode = "90401";
+    GoogleMap mMap;
+    LatLng mStationLoc = new LatLng(39.95, -75.17);
+    LatLng mMapCenter = new LatLng(39.95, -75.17);
+    boolean mMapIsTop = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -57,8 +72,18 @@ public class NextBusFragment extends Fragment {
         ListView listView = (ListView) rootView.findViewById(R.id.listview_bus_arrivals);
         listView.setAdapter(mArrivalsAdapter);
 
-        TextView stationNameTV = (TextView) rootView.findViewById(R.id.station_textView);
-
+        TextView stationNameTV = (TextView) rootView.findViewById(R.id.station_name_TV);
+        ImageView circleMaskIV = (ImageView) rootView.findViewById(R.id.img_circle_mask);
+        circleMaskIV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FrameLayout mapFrame = (FrameLayout) getActivity().findViewById(R.id.back_map);
+                mapFrame.bringToFront();
+                mMapIsTop = true;
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mMapCenter, 14));
+//                mapFrame.invalidate();
+            }
+        });
 
         new DownloadArrivals().execute();
         return rootView;
@@ -66,10 +91,13 @@ public class NextBusFragment extends Fragment {
 //        return super.onCreateView(inflater, container, savedInstanceState);
     }
 
-    private class DownloadArrivals extends AsyncTask<Void, Void, ArrayList<ArrivalsRowItem>> {
+    private class DownloadArrivals extends AsyncTask<Void, Void, ArrayList<ArrivalsRowItem>>
+            implements OnMapReadyCallback {
 
         ProgressDialog progressDialog = new ProgressDialog(getActivity());
         private final String LOG_TAG = DownloadArrivals.class.getSimpleName();
+        double mMask2ScreenWidthRatio;
+        double mMask2ScreenHeightRatio;
 
         @Override
         protected void onPreExecute() {
@@ -273,7 +301,7 @@ public class NextBusFragment extends Fragment {
                 stationName = c.getString(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_NAME));
             }
 
-            TextView stationNameTV = (TextView) getActivity().findViewById(R.id.station_textView);
+            TextView stationNameTV = (TextView) getActivity().findViewById(R.id.station_name_TV);
             stationNameTV.setText(stationName);
 
             // Populate the arrivals Array List we fetched in the background execution
@@ -287,7 +315,83 @@ public class NextBusFragment extends Fragment {
             mArrivalsAdapter.addAll(arrivalsArrayList);
             mArrivalsAdapter.notifyDataSetChanged();
 
+            // Create background map and position it to center on bus stop in circle
+            MapFragment backMapFragment = MapFragment.newInstance();
+
+            backMapFragment.getMapAsync(this);
+
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            //Replace whatever is in this container with the new (maps) fragment.
+            transaction.replace(R.id.back_map, backMapFragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+
+
         } //End method postExecute
+
+
+        /************************
+         * Callback function invoked once the map is ready to render.
+         * This is the point to specify where the maps is to be centered and what zoom.
+         * Also set lat long for the markers that will show up.
+         *************************/
+        @Override
+        public void onMapReady(GoogleMap map){
+                map.addMarker(new MarkerOptions()
+                        .position(mStationLoc)
+                        .title(mStationCode));
+            map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(mStationLoc, 14));
+
+
+            // Code to reposition the map so the station marker shows in the circular window.
+            int circleMaskWidth = getActivity().findViewById(R.id.img_circle_mask).getMeasuredWidth();
+            int circleMaskHeight = getActivity().findViewById(R.id.img_circle_mask).getMeasuredHeight();
+
+            int stationNameWidth = getActivity().findViewById(R.id.station_name_TV).getMeasuredWidth();
+            int busArvlsHeight = getActivity().findViewById(R.id.listview_bus_arrivals).getMeasuredHeight();
+
+            Log.d(LOG_TAG,"circleMaskWidth, circleMaskHeight, stationNameWidth, busArvlsHeight: "
+                    +circleMaskWidth+": "+circleMaskHeight+": "+stationNameWidth+": "+busArvlsHeight);
+
+            mMask2ScreenWidthRatio = 1.00*circleMaskWidth/(circleMaskWidth+stationNameWidth);
+            mMask2ScreenHeightRatio = 1.00*circleMaskHeight/(circleMaskHeight+busArvlsHeight);
+            Log.d(LOG_TAG,"Screen ratios: Width Ratio="+mMask2ScreenWidthRatio+" & Height Ratio="+mMask2ScreenHeightRatio);
+
+            LatLng mapLeft = map.getProjection().getVisibleRegion().farLeft;
+            LatLng mapRight = map.getProjection().getVisibleRegion().nearRight;
+            LatLngBounds mapBounds = map.getProjection().getVisibleRegion().latLngBounds;
+            Log.d(LOG_TAG, "farLeft=" + mapLeft + " & nearRight=" + mapRight);
+            Log.d(LOG_TAG, "Map Bounds=" + mapBounds);
+
+            View mapView = getFragmentManager().findFragmentById(R.id.back_map).getView();
+            mMap = map;
+            if (mapView.getViewTreeObserver().isAlive()){
+                mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        if (true == mMapIsTop) return;
+                        LatLngBounds mapBounds = mMap.getProjection().getVisibleRegion().latLngBounds;
+
+                        Log.d(LOG_TAG, "onGlobalLayoutListener Map Bounds=" + mapBounds);
+                        double mapWidth = Math.abs(mapBounds.northeast.longitude - mapBounds.southwest.longitude);
+                        double mapHeight = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
+                        Log.d(LOG_TAG, "onGlobalLayoutListener Map width & height=" + mapWidth + "/" + mapHeight);
+                        double mapCenterLat = (mapBounds.northeast.latitude + mapBounds.southwest.latitude)/2;
+                        double mapCenterLng = (mapBounds.northeast.longitude + mapBounds.southwest.longitude)/2;
+                        mMapCenter = mMap.getCameraPosition().target;
+                        // TO move to top left screen corner, subtract from latitude, add to longitude
+                        double cornerLat = mapCenterLat -  (mapHeight/2) + (mMask2ScreenHeightRatio*mapHeight/2);
+                        double cornerLng = mapCenterLng + (mapWidth/2) - (mMask2ScreenWidthRatio*mapWidth/2);
+                        Log.d(LOG_TAG, "Map Center=" + mapCenterLat + "/" + mapCenterLng+ " or it is " +mMapCenter);
+                        Log.d(LOG_TAG, "Map Corner=" + cornerLat + "/" + cornerLng);
+
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(cornerLat, cornerLng), 14));
+                    }
+                });
+            }
+
+        }
 
     } //end private class DownloadArrivals
 
