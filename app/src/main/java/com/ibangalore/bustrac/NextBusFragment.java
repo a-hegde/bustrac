@@ -60,6 +60,7 @@ public class NextBusFragment extends Fragment {
     LatLng mStationLoc = new LatLng(39.95, -75.17);
     LatLng mMapCenter = new LatLng(39.95, -75.17);
     boolean mMapIsTop = false;
+    private static final float DEFAULT_ZOOM = 13;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -80,7 +81,7 @@ public class NextBusFragment extends Fragment {
                 FrameLayout mapFrame = (FrameLayout) getActivity().findViewById(R.id.back_map);
                 mapFrame.bringToFront();
                 mMapIsTop = true;
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mMapCenter, 14));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mMapCenter, DEFAULT_ZOOM));
 //                mapFrame.invalidate();
             }
         });
@@ -336,12 +337,12 @@ public class NextBusFragment extends Fragment {
          * Also set lat long for the markers that will show up.
          *************************/
         @Override
-        public void onMapReady(GoogleMap map){
+        public void onMapReady(final GoogleMap map){
                 map.addMarker(new MarkerOptions()
                         .position(mStationLoc)
                         .title(mStationCode));
             map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(mStationLoc, 14));
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(mStationLoc, DEFAULT_ZOOM));
 
 
             // Code to reposition the map so the station marker shows in the circular window.
@@ -356,7 +357,7 @@ public class NextBusFragment extends Fragment {
 
             mMask2ScreenWidthRatio = 1.00*circleMaskWidth/(circleMaskWidth+stationNameWidth);
             mMask2ScreenHeightRatio = 1.00*circleMaskHeight/(circleMaskHeight+busArvlsHeight);
-            Log.d(LOG_TAG,"Screen ratios: Width Ratio="+mMask2ScreenWidthRatio+" & Height Ratio="+mMask2ScreenHeightRatio);
+            Log.d(LOG_TAG, "Screen ratios: Width Ratio=" + mMask2ScreenWidthRatio + " & Height Ratio=" + mMask2ScreenHeightRatio);
 
             LatLng mapLeft = map.getProjection().getVisibleRegion().farLeft;
             LatLng mapRight = map.getProjection().getVisibleRegion().nearRight;
@@ -370,29 +371,75 @@ public class NextBusFragment extends Fragment {
                 mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
                     public void onGlobalLayout() {
-                        if (true == mMapIsTop) return;
                         LatLngBounds mapBounds = mMap.getProjection().getVisibleRegion().latLngBounds;
-
                         Log.d(LOG_TAG, "onGlobalLayoutListener Map Bounds=" + mapBounds);
-                        double mapWidth = Math.abs(mapBounds.northeast.longitude - mapBounds.southwest.longitude);
-                        double mapHeight = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
-                        Log.d(LOG_TAG, "onGlobalLayoutListener Map width & height=" + mapWidth + "/" + mapHeight);
-                        double mapCenterLat = (mapBounds.northeast.latitude + mapBounds.southwest.latitude)/2;
-                        double mapCenterLng = (mapBounds.northeast.longitude + mapBounds.southwest.longitude)/2;
-                        mMapCenter = mMap.getCameraPosition().target;
-                        // TO move to top left screen corner, subtract from latitude, add to longitude
-                        double cornerLat = mapCenterLat -  (mapHeight/2) + (mMask2ScreenHeightRatio*mapHeight/2);
-                        double cornerLng = mapCenterLng + (mapWidth/2) - (mMask2ScreenWidthRatio*mapWidth/2);
-                        Log.d(LOG_TAG, "Map Center=" + mapCenterLat + "/" + mapCenterLng+ " or it is " +mMapCenter);
-                        Log.d(LOG_TAG, "Map Corner=" + cornerLat + "/" + cornerLng);
+                        if (true == mMapIsTop){
+                            // Get markers for all stations in visible area of map.
+                            String [] selectArgs = new String[] {
+                                    String.valueOf(mapBounds.southwest.latitude), String.valueOf(mapBounds.northeast.latitude),
+                                    String.valueOf(mapBounds.southwest.longitude), String.valueOf(mapBounds.northeast.longitude)
+                            };
+                            Cursor c = getActivity().getContentResolver().query(TrackerContract.StationsMaster.CONTENT_URI,
+                                    null,
+                                    "latitude between ? and ? and longitude between ? and ?",
+                                    selectArgs,
+                                    null);
+                            while (c.moveToNext()){
+                                LatLng stationPoint = new LatLng(c.getDouble(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_LATITUDE)),
+                                c.getDouble(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_LONGITUDE)));
+                                String stationName = c.getString(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_NAME));
 
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(cornerLat, cornerLng), 14));
+                                Log.d(LOG_TAG, "In query cursor, got station> " + stationName + " point: " + stationPoint);
+                                Log.d(LOG_TAG, "Longitude (Double) is > "+c.getDouble(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_LONGITUDE)));
+                                        mMap.addMarker(new MarkerOptions()
+                                                .position(stationPoint)
+                                                .title(c.getString(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_NAME))));
+                            }
+                            return;
+                        }
+                        else{
+                            //Map is underneath the ListView. Reposition so that marker on current station shows up
+                            // in the circular window next to station name. Some messy calculation required to
+                            // figure out where map should be repositioned is done here. Move out later.
+
+                            double mapWidth = Math.abs(mapBounds.northeast.longitude - mapBounds.southwest.longitude);
+                            double mapHeight = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
+                            Log.d(LOG_TAG, "onGlobalLayoutListener Map width & height=" + mapWidth + "/" + mapHeight);
+                            double mapCenterLat = (mapBounds.northeast.latitude + mapBounds.southwest.latitude)/2;
+                            double mapCenterLng = (mapBounds.northeast.longitude + mapBounds.southwest.longitude)/2;
+                            mMapCenter = mMap.getCameraPosition().target;
+                            // TO move to top left screen corner, subtract from latitude, add to longitude
+                            double cornerLat = mapCenterLat -  (mapHeight/2) + (mMask2ScreenHeightRatio*mapHeight/2);
+                            double cornerLng = mapCenterLng + (mapWidth/2) - (mMask2ScreenWidthRatio * mapWidth / 2);
+                            Log.d(LOG_TAG, "Map Center=" + mapCenterLat + "/" + mapCenterLng+ " or it is " +mMapCenter);
+                            Log.d(LOG_TAG, "Map Corner=" + cornerLat + "/" + cornerLng);
+
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(cornerLat, cornerLng), DEFAULT_ZOOM));
+                        }
+
                     }
                 });
             }
 
+        } //end function onMapReady
+
+        private LatLng getCornerLocation(LatLngBounds mapBounds){
+            double mapWidth = Math.abs(mapBounds.northeast.longitude - mapBounds.southwest.longitude);
+            double mapHeight = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
+//            Log.d(LOG_TAG, "onGlobalLayoutListener Map width & height=" + mapWidth + "/" + mapHeight);
+
+            mMapCenter = mMap.getCameraPosition().target;
+            double mapCenterLat = mMapCenter.latitude;
+            double mapCenterLng = mMapCenter.longitude;
+
+            // TO move to top left screen corner, subtract from latitude, add to longitude
+            double cornerLat = mapCenterLat -  (mapHeight/2) + (mMask2ScreenHeightRatio*mapHeight/2);
+            double cornerLng = mapCenterLng + (mapWidth/2) - (mMask2ScreenWidthRatio * mapWidth / 2);
+            Log.d(LOG_TAG, "Map Corner=" + cornerLat + "/" + cornerLng);
+            return new LatLng(cornerLat, cornerLng);
         }
+
 
     } //end private class DownloadArrivals
 
-}
+}// end class NextBusFragment

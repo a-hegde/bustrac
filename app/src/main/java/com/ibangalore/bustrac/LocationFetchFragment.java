@@ -224,6 +224,11 @@ public class LocationFetchFragment extends Fragment{
                 ContentValues cv = new ContentValues();
                 cv.put(TrackerContract.StationsMaster.COLUMN_STATION_ID, columns[0]);
                 cv.put(TrackerContract.StationsMaster.COLUMN_STATION_NAME, columns[1]);
+
+                if(columns.length >=4){
+                    cv.put(TrackerContract.StationsMaster.COLUMN_LATITUDE, columns[2]);
+                    cv.put(TrackerContract.StationsMaster.COLUMN_LONGITUDE, columns[3]);
+                }
                 // put cv into Content Value array defined earlier
                 stationMasterCV.add(cv);
             }

@@ -4,7 +4,7 @@ Station_ID, Station Name
 90404,Airport Terminal A
 90403,Airport Terminal B
 90402,Airport Terminal C-D
-90401,Airport Terminal E-F
+90401,Airport Terminal E-F,39.94346,-75.19187
 90208,Allegheny
 90804,Allen Lane
 90526,Ambler
@@ -14,13 +14,13 @@ Station_ID, Station Name
 90002,Bala
 90508,Berwyn
 90318,Bethayres
-90710,Bridesburg
+90710,Bridesburg,39.95214,-75.16374
 90703,Bristol
 90516,Bryn Mawr
 90805,Carpenter
 90535,Chalfont
 90808,Chelten Avenue
-90813,Cheltenham
+90813,Cheltenham, 39.95788,-75.17049
 90207,Chester TC
 90720,Chestnut Hill East
 90801,Chestnut Hill West
@@ -50,7 +50,7 @@ Station_ID, Station Name
 90504,Exton
 90407,Fern Rock TC
 90312,Fernwood
-90214,Folcroft
+90214,Folcroft,39.95788,-75.17049
 90320,Forest Hills
 90525,Ft Washington
 90532,Fortuna
@@ -61,33 +61,33 @@ Station_ID, Station Name
 90411,Glenside
 90719,Gravers
 90528,Gwynedd Valley
-90416,Hatboro
+90416,Hatboro,39.92025,-75.17322
 90517,Haverford
 90206,Highland Ave
 90802,Highland
 90708,Holmesburg Jct
 90222,Ivy Ridge
 90410,Jenkintown-Wyncote
-90324,Langhorne
+90324,Langhorne,39.92900,-75.18457
 90531,Lansdale
 90311,Lansdowne
 90812,Lawndale
 90702,Levittown
 90534,Link Belt
 90227,Main St
-90505,Malvern
+90505,Malvern,39.94038,-75.17556
 90221,Manayunk East
 90205,Marcus Hook
 90006,Market East
 90317,Meadowbrook
 90302,Media
-90408,Melrose Park
+90408,Melrose Park,39.92175,-75.18144
 90521,Merion
 90223,Miquon
 90306,Morton
 90303,Moylan-Rose Valley
 90717,Mt Airy
-90520,Narberth
+90520,Narberth,39.93046,-75.18862
 90323,Neshaminy Falls
 90536,New Britain
 90201,Newark
@@ -109,7 +109,7 @@ Station_ID, Station Name
 90809,Queen Lane
 90513,Radnor
 90210,Ridley Park
-90515,Rosemont
+90515,Rosemont,39.94722,-75.191995
 90413,Roslyn
 90316,Rydal
 90814,Ryers

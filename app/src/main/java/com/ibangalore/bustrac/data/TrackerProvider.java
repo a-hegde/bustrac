@@ -92,6 +92,17 @@ public class TrackerProvider extends ContentProvider {
                 retCursor = getStationName(uri);
                 break;
             }
+            case STATION_MASTER:{
+                retCursor = sStationsQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        null
+                );
+                break;
+            }
             default:
                 Log.d(LOG_TAG, sUriMatcher.match(uri) +" did not match "+ALL_BUS_LOCATIONS+" or "+BUS_LOCATIONS);
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -99,68 +110,6 @@ public class TrackerProvider extends ContentProvider {
 
         retCursor.setNotificationUri(getContext().getContentResolver(), uri);
         return retCursor;
-    }
-
-    private Cursor getBusLocations(Uri uri, String[] projection,
-                                   String sortOrder){
-        String routeNum = TrackerContract.LocationEntry.getRouteNumFromUri(uri);
-        String[] selectionArgs = new String[] {routeNum};
-        String selection = sBusLocationsSelection;
-
-        return sBusLocationsQueryBuilder.query(mOpenHelper.getReadableDatabase(),
-                projection,
-                selection,
-                selectionArgs,
-                null,
-                null,
-                sortOrder
-        );
-
-    }
-
-    private Cursor getRouteMaster(Uri uri, String[] projection,
-                                   String sortOrder){
-
-        return sRoutesQueryBuilder.query(mOpenHelper.getReadableDatabase(),
-                projection,
-                null,
-                null,
-                null,
-                null,
-                sortOrder
-        );
-
-    }
-
-    private Cursor getStationMaster(Uri uri, String[] projection,
-                                  String sortOrder){
-
-        return sStationsQueryBuilder.query(mOpenHelper.getReadableDatabase(),
-                projection,
-                null,
-                null,
-                null,
-                null,
-                sortOrder
-        );
-
-    }
-
-    private Cursor getStationName(Uri uri){
-        String stationId = TrackerContract.StationsMaster.getStationIdFromUri(uri);
-        String[] selectionArgs = new String[] {stationId};
-        String selection = sStationNameSelection;
-        String[] projection = new String[]{TrackerContract.StationsMaster.COLUMN_STATION_NAME};
-
-        return sStationsQueryBuilder.query(mOpenHelper.getReadableDatabase(),
-                projection,
-                selection,
-                selectionArgs,
-                null,
-                null,
-                null
-        );
-
     }
 
 
@@ -252,5 +201,67 @@ public class TrackerProvider extends ContentProvider {
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         return 0;
+    }
+
+    private Cursor getBusLocations(Uri uri, String[] projection,
+                                   String sortOrder){
+        String routeNum = TrackerContract.LocationEntry.getRouteNumFromUri(uri);
+        String[] selectionArgs = new String[] {routeNum};
+        String selection = sBusLocationsSelection;
+
+        return sBusLocationsQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                sortOrder
+        );
+
+    }
+
+    private Cursor getRouteMaster(Uri uri, String[] projection,
+                                  String sortOrder){
+
+        return sRoutesQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                projection,
+                null,
+                null,
+                null,
+                null,
+                sortOrder
+        );
+
+    }
+
+    private Cursor getStationMaster(Uri uri, String[] projection,
+                                    String sortOrder){
+
+        return sStationsQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                projection,
+                null,
+                null,
+                null,
+                null,
+                sortOrder
+        );
+
+    }
+
+    private Cursor getStationName(Uri uri){
+        String stationId = TrackerContract.StationsMaster.getStationIdFromUri(uri);
+        String[] selectionArgs = new String[] {stationId};
+        String selection = sStationNameSelection;
+        String[] projection = new String[]{TrackerContract.StationsMaster.COLUMN_STATION_NAME};
+
+        return sStationsQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+
     }
 }
