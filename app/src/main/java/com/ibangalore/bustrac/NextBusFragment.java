@@ -24,6 +24,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.ibangalore.bustrac.UXAssets.ArrivalsLViewAdapter;
 import com.ibangalore.bustrac.UXAssets.ArrivalsRowItem;
@@ -44,7 +45,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.Vector;
 
@@ -53,19 +56,33 @@ import java.util.Vector;
  */
 public class NextBusFragment extends Fragment {
     private static final String LOG_TAG=NextBusFragment.class.getSimpleName();
+    public static final String KEY_STATION_CODE = "station_code";
     Vector<ContentValues> mContentValuesVector;
     ArrivalsLViewAdapter mArrivalsAdapter;
-    String mStationCode = "90401";
+    public String stationCode = "90401";
     GoogleMap mMap;
     LatLng mStationLoc = new LatLng(39.95, -75.17);
     LatLng mMapCenter = new LatLng(39.95, -75.17);
     boolean mMapIsTop = false;
     private static final float DEFAULT_ZOOM = 13;
 
+    //Create a Mapping from individual markers to corresponding station ids
+    private Map<Marker, Integer> markerMap = new HashMap<Marker, Integer>();
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         Log.d(LOG_TAG, "func onCreateView starts");
+        Bundle  arguments = getArguments();
+        if (arguments != null){
+            if(arguments.containsKey(NextBusFragment.KEY_STATION_CODE)){
+                this.stationCode = String.valueOf(arguments.getInt(NextBusFragment.KEY_STATION_CODE));
+                Log.d(LOG_TAG, "onCreateView, stationCode set to "+this.stationCode );
+
+            }
+
+        }
+
         ArrayList<ArrivalsRowItem> arrayArrivals = new ArrayList<ArrivalsRowItem>();
         mArrivalsAdapter = new ArrivalsLViewAdapter(getActivity(), arrayArrivals);
 
@@ -74,8 +91,8 @@ public class NextBusFragment extends Fragment {
         listView.setAdapter(mArrivalsAdapter);
 
         TextView stationNameTV = (TextView) rootView.findViewById(R.id.station_name_TV);
-        ImageView circleMaskIV = (ImageView) rootView.findViewById(R.id.img_circle_mask);
-        circleMaskIV.setOnClickListener(new View.OnClickListener() {
+        ImageView circleMaskImgV = (ImageView) rootView.findViewById(R.id.img_circle_mask);
+        circleMaskImgV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FrameLayout mapFrame = (FrameLayout) getActivity().findViewById(R.id.back_map);
@@ -131,8 +148,8 @@ public class NextBusFragment extends Fragment {
             URL url = null;
             String baseArrivalsUri = "http://www3.septa.org/hackathon/Arrivals";
 
-            String stationCode = mStationCode;
-            Log.d(LOG_TAG, "Station Code = " + mStationCode);
+            String stationCode = NextBusFragment.this.stationCode;
+            Log.d(LOG_TAG, "Station Code = " + NextBusFragment.this.stationCode);
 
             String arrivalsJsonStr = null;
 
@@ -289,7 +306,7 @@ public class NextBusFragment extends Fragment {
             String stationName=null;
 
             //Get the station name from the station id to put at top of screen.
-            Uri uri = TrackerContract.StationsMaster.buildStationsUriFromID(mStationCode);
+            Uri uri = TrackerContract.StationsMaster.buildStationsUriFromID(stationCode);
             Log.d(LOG_TAG,"Uri we constructed is "+uri);
             Cursor c = getActivity().getContentResolver().query(
                     uri,
@@ -340,7 +357,7 @@ public class NextBusFragment extends Fragment {
         public void onMapReady(final GoogleMap map){
                 map.addMarker(new MarkerOptions()
                         .position(mStationLoc)
-                        .title(mStationCode));
+                        .title(stationCode));
             map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(mStationLoc, DEFAULT_ZOOM));
 
@@ -359,11 +376,13 @@ public class NextBusFragment extends Fragment {
             mMask2ScreenHeightRatio = 1.00*circleMaskHeight/(circleMaskHeight+busArvlsHeight);
             Log.d(LOG_TAG, "Screen ratios: Width Ratio=" + mMask2ScreenWidthRatio + " & Height Ratio=" + mMask2ScreenHeightRatio);
 
+/*
             LatLng mapLeft = map.getProjection().getVisibleRegion().farLeft;
             LatLng mapRight = map.getProjection().getVisibleRegion().nearRight;
             LatLngBounds mapBounds = map.getProjection().getVisibleRegion().latLngBounds;
             Log.d(LOG_TAG, "farLeft=" + mapLeft + " & nearRight=" + mapRight);
             Log.d(LOG_TAG, "Map Bounds=" + mapBounds);
+*/
 
             View mapView = getFragmentManager().findFragmentById(R.id.back_map).getView();
             mMap = map;
@@ -387,42 +406,54 @@ public class NextBusFragment extends Fragment {
                             while (c.moveToNext()){
                                 LatLng stationPoint = new LatLng(c.getDouble(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_LATITUDE)),
                                 c.getDouble(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_LONGITUDE)));
+                                Integer stationId = c.getInt(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_ID));
                                 String stationName = c.getString(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_NAME));
 
-                                Log.d(LOG_TAG, "In query cursor, got station> " + stationName + " point: " + stationPoint);
-                                Log.d(LOG_TAG, "Longitude (Double) is > "+c.getDouble(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_LONGITUDE)));
-                                        mMap.addMarker(new MarkerOptions()
-                                                .position(stationPoint)
-                                                .title(c.getString(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_NAME))));
+                                Log.d(LOG_TAG, "In query cursor, got station> " + stationName + " point: " + stationPoint
+                                        + " id:"+stationId);
+                                Marker m = mMap.addMarker(new MarkerOptions()
+                                        .position(stationPoint)
+                                        .title(c.getString(c.getColumnIndex(TrackerContract.StationsMaster.COLUMN_STATION_NAME))));
+                                //add mapping of markers to station ids to marker Map for use in InfoWindow Click Listener
+                                markerMap.put(m, stationId);
                             }
                             return;
                         }
                         else{
-                            //Map is underneath the ListView. Reposition so that marker on current station shows up
+                            // Map is underneath the ListView. Reposition so that marker on current station shows up
                             // in the circular window next to station name. Some messy calculation required to
-                            // figure out where map should be repositioned is done here. Move out later.
+                            // figure out where map should be repositioned is done in getCornerLocation().
+                            // Call the procedure and reposition map.
 
-                            double mapWidth = Math.abs(mapBounds.northeast.longitude - mapBounds.southwest.longitude);
-                            double mapHeight = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
-                            Log.d(LOG_TAG, "onGlobalLayoutListener Map width & height=" + mapWidth + "/" + mapHeight);
-                            double mapCenterLat = (mapBounds.northeast.latitude + mapBounds.southwest.latitude)/2;
-                            double mapCenterLng = (mapBounds.northeast.longitude + mapBounds.southwest.longitude)/2;
-                            mMapCenter = mMap.getCameraPosition().target;
-                            // TO move to top left screen corner, subtract from latitude, add to longitude
-                            double cornerLat = mapCenterLat -  (mapHeight/2) + (mMask2ScreenHeightRatio*mapHeight/2);
-                            double cornerLng = mapCenterLng + (mapWidth/2) - (mMask2ScreenWidthRatio * mapWidth / 2);
-                            Log.d(LOG_TAG, "Map Center=" + mapCenterLat + "/" + mapCenterLng+ " or it is " +mMapCenter);
-                            Log.d(LOG_TAG, "Map Corner=" + cornerLat + "/" + cornerLng);
-
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(cornerLat, cornerLng), DEFAULT_ZOOM));
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(getCornerLocation(mapBounds), DEFAULT_ZOOM));
                         }
 
                     }
                 });
             }
 
+            mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+                @Override
+                public void onInfoWindowClick(Marker marker) {
+                    int stationId = markerMap.get(marker);
+                    NextBusFragment nextBusFragment = new NextBusFragment();
+                    Bundle bundle = new Bundle();
+                    bundle.putInt(NextBusFragment.KEY_STATION_CODE, stationId);
+                    nextBusFragment.setArguments(bundle);
+
+                    FragmentTransaction transaction = getFragmentManager().beginTransaction();
+                    transaction.replace(R.id.body, nextBusFragment);
+                    transaction.addToBackStack(null);
+                    transaction.commit();
+
+                }
+            });
+
         } //end function onMapReady
 
+        // Map is underneath the ListView. Reposition so that marker on current station shows up
+        // in the circular window next to station name. Some messy calculation required to
+        // figure out where map should be repositioned is done here.
         private LatLng getCornerLocation(LatLngBounds mapBounds){
             double mapWidth = Math.abs(mapBounds.northeast.longitude - mapBounds.southwest.longitude);
             double mapHeight = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
